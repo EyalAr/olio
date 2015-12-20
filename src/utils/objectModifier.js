@@ -31,6 +31,10 @@ class ObjectModifier {
     // calls to 'set' with the respective keypath.
     // this way we only have to deal with setting primitive values.
     if (isObject(newVal)) {
+      // attempt to reset the keypath (delete whatever is there now):
+      try{
+        _setPrimitiveDeep(this.obj, keypath, undefined);
+      } catch (e) { /* there was nothing there */ }
       // deep traversal of the object/array. will walk the object tree
       // and set the value at each level.
       // will loop over an array's indices, or a plain object's keys:
