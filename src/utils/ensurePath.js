@@ -37,7 +37,7 @@ function ensurePath ( obj, path ) {
         newPaths = [];
     if (!isObject(obj[key])) {
         let oldVal = obj[key];
-        obj[key] = next == parseInt(next) ? [] : {};
+        obj[key] = +next === parseInt(next) && +next >= 0 ? [] : {};
         newPaths.push({
             path: [key],
             oldVal: oldVal,

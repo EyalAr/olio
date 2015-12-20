@@ -143,4 +143,62 @@ describe ( "ensure path in object", () => {
             expected.should.be.deepEqual(obj);
         });
     } );
+
+    describe ( "path goes through arrays", () => {
+        let obj = {
+            foo: "bar"
+        };
+        let expected = {
+            '1.1': [,,[,,,{'-8':[]}]],
+            foo: "bar"
+        };
+        let newPaths = ensurePath(obj, [1.1, 2, 3, -8, 0]);
+        it ("should create 4 new paths", () => {
+            newPaths.should.be.length(4);
+        });
+
+        it ("should create correct path for the 1st level", () => {
+            newPaths[0].path.should.be.deepEqual([1.1]);
+        });
+        it ("should create correct value for the 1st level", () => {
+            newPaths[0].newVal.should.be.deepEqual(expected['1.1']);
+        });
+        it ("should remember old value of the 1st level", () => {
+            should(newPaths[0].oldVal).be.undefined();
+        });
+
+        it ("should create correct path for the 2nd level", () => {
+            newPaths[1].path.should.be.deepEqual([1.1, 2]);
+        });
+        it ("should create correct value for the 2nd level", () => {
+            newPaths[1].newVal.should.be.deepEqual(expected['1.1'][2]);
+        });
+        it ("should remember old value of the 2nd level", () => {
+            should(newPaths[1].oldVal).be.undefined();
+        });
+
+        it ("should create correct path for the 3rd level", () => {
+            newPaths[2].path.should.be.deepEqual([1.1, 2, 3]);
+        });
+        it ("should create correct value for the 3rd level", () => {
+            newPaths[2].newVal.should.be.deepEqual(expected['1.1'][2][3]);
+        });
+        it ("should remember old value of the 3rd level", () => {
+            should(newPaths[2].oldVal).be.undefined();
+        });
+
+        it ("should create correct path for the 4th level", () => {
+            newPaths[3].path.should.be.deepEqual([1.1, 2, 3, -8]);
+        });
+        it ("should create correct value for the 4th level", () => {
+            newPaths[3].newVal.should.be.deepEqual(expected['1.1'][2][3]['-8']);
+        });
+        it ("should remember old value of the 4th level", () => {
+            should(newPaths[3].oldVal).be.undefined();
+        });
+
+        it ("should modify the object", () => {
+            expected.should.be.deepEqual(obj);
+        });
+    } );
 } );
