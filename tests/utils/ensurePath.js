@@ -1,4 +1,5 @@
 /* eslint-env mocha */
+/* eslint no-sparse-arrays: 0 */
 
 import should from "should";
 import ensurePath from "../../src/utils/ensurePath";
@@ -16,7 +17,7 @@ describe("ensure path in object", () => {
   describe("path doesn't exist", () => {
     const obj = { foo: "bar" },
           expected = {
-            a: { b: { c: [undefined, {}] } },
+            a: { b: { c: [, {}] } },
             foo: "bar"
           },
           newPaths = ensurePath(obj, ["a", "b", "c", 1, "d"]);
@@ -76,7 +77,7 @@ describe("ensure path in object", () => {
             foo: "bar"
           },
           expected = {
-            a: { b: { c: [undefined, {}] } },
+            a: { b: { c: [, {}] } },
             foo: "bar"
           },
           newPaths = ensurePath(obj, ["a", "b", "c", 1, "d"]);
@@ -123,7 +124,7 @@ describe("ensure path in object", () => {
   describe("path goes through arrays", () => {
     const obj = { foo: "bar" },
           expected = {
-            "1.1": [undefined, undefined, [undefined, undefined, undefined, { "-8": [] }]],
+            "1.1": [,, [,,, { "-8": [] }]],
             foo: "bar"
           },
           newPaths = ensurePath(obj, [1.1, 2, 3, -8, 0]);

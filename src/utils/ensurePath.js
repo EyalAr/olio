@@ -1,8 +1,7 @@
 import {
   isObject,
   map,
-  parseInt,
-  fill
+  parseInt
 } from "lodash";
 
 /**
@@ -45,7 +44,7 @@ function ensurePath(obj, path) {
     // decide if to create an object or an array based on if the key is a
     // positive integer or not.
     const makeArray = +next === parseInt(next) && +next >= 0,
-          newVal = obj[key] = makeArray ? fill(Array(+next), undefined) : {},
+          newVal = obj[key] = makeArray ? [] : {},
           relPath = [key]; // relative path to our current position
     newPaths.push({
       path: relPath,
