@@ -4,7 +4,9 @@ import {
   keys,
   isUndefined,
   isArray,
-  last
+  last,
+  map,
+  reduce
 } from "lodash";
 
 import ensurePath from "./ensurePath";
@@ -27,14 +29,23 @@ class ObjectModifier {
   }
 
   set(keypath, newVal) {
+    // attempt to reset the keypath (remove whatever is there now):
+    try {
+      const removedVal = _setPrimitiveDeep(this.obj, keypath, undefined);
+      if (!isUndefined(removedVal)){
+        this.changes.push.apply(
+          this.changes,
+          map(_generateRemovalChanges(removedVal), c => {
+            c.keypath = keypath.concat(c.keypath);
+            return c;
+          })
+        );
+      }
+    } catch (e) { /* there was nothing there */ }
     // if array or plain object, walk down the object tree and recurse
     // calls to 'set' with the respective keypath.
     // this way we only have to deal with setting primitive values.
     if (isObject(newVal)) {
-      // attempt to reset the keypath (delete whatever is there now):
-      try{
-        _setPrimitiveDeep(this.obj, keypath, undefined);
-      } catch (e) { /* there was nothing there */ }
       // deep traversal of the object/array. will walk the object tree
       // and set the value at each level.
       // will loop over an array's indices, or a plain object's keys:
@@ -63,9 +74,36 @@ class ObjectModifier {
         keypath: p.path
       });
     });
+    if (isObject(oldVal)) {
+      this.changes.push.apply(
+        this.changes,
+        map(_generateRemovalChanges(oldVal), c => {
+          c.keypath = keypath.concat(c.keypath);
+          return c;
+        })
+      );
+    }
     this.changes.push({ oldVal, newVal, keypath });
   }
 
+}
+
+function _generateRemovalChanges(val) {
+  const res = [];
+  if (isObject(val)) {
+    forEach(keys(val), key => {
+      forEach(_generateRemovalChanges(val[key]), c => {
+        c.keypath = [key].concat(c.keypath);
+        res.push(c);
+      });
+    });
+  }
+  res.push({
+    keypath: [],
+    oldVal: val,
+    newVal: undefined
+  });
+  return res;
 }
 
 /**
