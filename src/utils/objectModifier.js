@@ -15,7 +15,7 @@ import ensurePath from "./ensurePath";
  * manner.
  * Will track all modifications done to the wrapped object.
  */
-class ObjectModifier {
+export default class ObjectModifier {
 
   /**
    * Constructor.
@@ -26,10 +26,23 @@ class ObjectModifier {
     this.changes = [];
   }
 
+  /**
+   * Set a value for the specified key path in the object.
+   * Overriding an existing value will be considered as two actions:
+   * 1. setting the old value to undefined.
+   * 2. setting the new value.
+   * Overriding an object value will set each of the primitive values in the
+   * object tree to undefined (with respective change entries).
+   * @param {Array} keypath The key path in the object tree.
+   * @param {*} newVal The value to set.
+   */
   set(keypath, newVal) {
     // attempt to reset the keypath (remove whatever is there now):
     try {
+      // _setPrimitiveDeep will throw if the path doesn't exist
       const removedVal = _setPrimitiveDeep(this.obj, keypath, undefined);
+      // if the path does exist, and the value under it was not undefined,
+      // report removals for all primitive values in the removed object tree.
       if (!isUndefined(removedVal)) {
         forEach(_generateRemovalChanges(removedVal), c => {
           c.keypath = keypath.concat(c.keypath);
@@ -53,15 +66,31 @@ class ObjectModifier {
     }
   }
 
+  /**
+   * Loop over the changes made to the object.
+   * @param  {Function} cb Callback function to be called with each change.
+   * Arguments are: callback(keypath, newVal, oldVal)
+   */
   forEachChange(cb) {
     forEach(this.changes, change => {
       cb(change.keypath, change.newVal, change.oldVal);
     });
   }
 
+  /**
+   * Set a primitive value under the keypath.
+   * @param {Array} keypath The key path in the object tree.
+   * @param {*} newVal The value to set.
+   * @see _setPrimitiveDeep
+   * @private
+   */
   _setPrimitive(keypath, newVal) {
-    const newPaths = ensurePath(this.obj, keypath),
-          oldVal = _setPrimitiveDeep(this.obj, keypath, newVal);
+    const newPaths = ensurePath(this.obj, keypath);
+    // the following call will always return undefined (the old value), since
+    // we either deleted this path in this.set(), or ensurePath created an
+    // undefined value under this path.
+    _setPrimitiveDeep(this.obj, keypath, newVal);
+    // report the creation of new paths:
     forEach(newPaths, p => {
       this.changes.push({
         oldVal: p.oldVal,
@@ -69,17 +98,18 @@ class ObjectModifier {
         keypath: p.path
       });
     });
-    if (isObject(oldVal)) {
-      forEach(_generateRemovalChanges(oldVal), c => {
-        c.keypath = keypath.concat(c.keypath);
-        this.changes.push(c);
-      });
-    }
-    this.changes.push({ oldVal, newVal, keypath });
+    // as mentioned above, the old value will always be undefined
+    this.changes.push({ oldVal: undefined, newVal, keypath });
   }
 
 }
 
+/**
+ * Generate change entries as if all the primitive values in the given
+ * object were set to undefined (removed).
+ * @param  {*} val The value (primitive or object).
+ * @return {Array} Array of change entries.
+ */
 function _generateRemovalChanges(val) {
   const res = [];
   if (isObject(val)) {
@@ -130,5 +160,3 @@ function _setPrimitiveDeep(obj, keypath, newVal) {
   // walk down the object
   return _setPrimitiveDeep(child, keypath.slice(1), newVal);
 }
-
-export default ObjectModifier;
