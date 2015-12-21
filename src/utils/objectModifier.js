@@ -4,9 +4,7 @@ import {
   keys,
   isUndefined,
   isArray,
-  last,
-  map,
-  reduce
+  last
 } from "lodash";
 
 import ensurePath from "./ensurePath";
@@ -32,14 +30,11 @@ class ObjectModifier {
     // attempt to reset the keypath (remove whatever is there now):
     try {
       const removedVal = _setPrimitiveDeep(this.obj, keypath, undefined);
-      if (!isUndefined(removedVal)){
-        this.changes.push.apply(
-          this.changes,
-          map(_generateRemovalChanges(removedVal), c => {
-            c.keypath = keypath.concat(c.keypath);
-            return c;
-          })
-        );
+      if (!isUndefined(removedVal)) {
+        forEach(_generateRemovalChanges(removedVal), c => {
+          c.keypath = keypath.concat(c.keypath);
+          this.changes.push(c);
+        });
       }
     } catch (e) { /* there was nothing there */ }
     // if array or plain object, walk down the object tree and recurse
@@ -75,13 +70,10 @@ class ObjectModifier {
       });
     });
     if (isObject(oldVal)) {
-      this.changes.push.apply(
-        this.changes,
-        map(_generateRemovalChanges(oldVal), c => {
-          c.keypath = keypath.concat(c.keypath);
-          return c;
-        })
-      );
+      forEach(_generateRemovalChanges(oldVal), c => {
+        c.keypath = keypath.concat(c.keypath);
+        this.changes.push(c);
+      });
     }
     this.changes.push({ oldVal, newVal, keypath });
   }
