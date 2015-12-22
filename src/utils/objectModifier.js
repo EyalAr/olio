@@ -15,7 +15,7 @@ import ensurePath from "./ensurePath";
  * manner.
  * Will track all modifications done to the wrapped object.
  */
-export default class ObjectModifier {
+class ObjectModifier {
 
   /**
    * Constructor.
@@ -67,9 +67,17 @@ export default class ObjectModifier {
   }
 
   /**
+   * Called with one change entry.
+   * @callback ObjectModifier~changesCallback
+   * @param {Array} keypath The keypath of the change.
+   * @param {*} newVal The value after the change.
+   * @param {*} oldVal The value before the change.
+   */
+
+  /**
    * Loop over the changes made to the object.
-   * @param  {Function} cb Callback function to be called with each change.
-   * Arguments are: callback(keypath, newVal, oldVal)
+   * @param {ObjectModifier~changesCallback} cb Callback function to be called
+   * with each change.
    */
   forEachChange(cb) {
     forEach(this.changes, change => {
@@ -162,3 +170,5 @@ export default class ObjectModifier {
   }
 
 }
+
+export default ObjectModifier;

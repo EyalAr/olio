@@ -31,7 +31,7 @@ import {
 * // NOTE that 'a.b.c.d' is not reported as a new path, since obj.a.b.c.d
 * // was undefined and is still undefined; hence nothing changed for this path.
 */
-export default function ensurePath(obj, path) {
+function ensurePath(obj, path) {
   // no new sub-objects need to be created. obj[path[0]] exists or is undefined
   if (path.length === 1) return [];
   const key = path[0],
@@ -60,3 +60,5 @@ export default function ensurePath(obj, path) {
     })
   );
 }
+
+export default ensurePath;

@@ -13,7 +13,8 @@
   "scripts": {
     "test": "./node_modules/.bin/mocha --opts tests/mocha.opts tests",
     "build": "./node_modules/.bin/webpack",
-    "lint": "./node_modules/.bin/eslint src tests"
+    "lint": "./node_modules/.bin/eslint src tests",
+    "docs": "node_modules/.bin/jsdoc --configure .jsdoc.json --verbose"
   },
   "author": "Eyal Arubas <eyalarubas@gmail.com>",
   "license": "ISC",
@@ -29,6 +30,8 @@
     "babel-register": "^6.3.13",
     "eslint": "^1.10.3",
     "eslint-config-airbnb": "^2.1.1",
+    "ink-docstrap": "^1.1.0",
+    "jsdoc": "^3.4.0",
     "mocha": "^2.3.4",
     "should": "^8.0.2",
     "webpack": "^1.12.9"
