@@ -4,22 +4,23 @@ import {
   keys,
   isUndefined,
   isArray,
-  last
+  last,
+  filter
 } from "lodash";
 
 import ensurePath from "./ensurePath";
 
 /**
  * A wrapper around a plain object.
- * Can be used to set/remove values from the object in a nested
+ * Can be used to set/remove/push/pop values from the object in a nested
  * manner.
  * Will track all modifications done to the wrapped object.
  */
 class ObjectModifier {
 
   /**
-   * Constructor.
-   * @param  {Object} obj The object to modify
+   * Construct a new ObjectModifier.
+   * @param  {Object} obj The object to modify.
    */
   constructor(obj) {
     this.obj = obj;
@@ -146,7 +147,22 @@ class ObjectModifier {
    */
   forEachChange(cb) {
     forEach(this.changes, change => {
-      cb(change.keypath, change.newVal, change.oldVal);
+      const seen = !!change.seen;
+      change.seen = true;
+      cb(change.keypath, change.newVal, change.oldVal, seen);
+    });
+  }
+
+  /**
+   * Loop over the new changes made to the object since the last iteration.
+   * @param {ObjectModifier~changesCallback} cb Callback function to be called
+   * with each change.
+   */
+  forEachNewChange(cb) {
+    const newChanges = filter(this.changes, c => !c.seen);
+    forEach(newChanges, change => {
+      change.seen = true;
+      cb(change.keypath, change.newVal, change.oldVal, false);
     });
   }
 
@@ -272,19 +288,19 @@ class ObjectModifier {
   static _generateRemovalChanges(val) {
     const res = [];
     if (!isUndefined(val)) {
-    if (isObject(val)) {
-      forEach(keys(val), key => {
-        forEach(ObjectModifier._generateRemovalChanges(val[key]), c => {
-          c.keypath = [key].concat(c.keypath);
-          res.push(c);
+      if (isObject(val)) {
+        forEach(keys(val), key => {
+          forEach(ObjectModifier._generateRemovalChanges(val[key]), c => {
+            c.keypath = [key].concat(c.keypath);
+            res.push(c);
+          });
         });
+      }
+      res.push({
+        keypath: [],
+        oldVal: val,
+        newVal: undefined
       });
-    }
-    res.push({
-      keypath: [],
-      oldVal: val,
-      newVal: undefined
-    });
     }
     return res;
   }
