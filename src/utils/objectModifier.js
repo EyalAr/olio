@@ -67,6 +67,58 @@ class ObjectModifier {
   }
 
   /**
+   * Remove the keypath from the object. Equivalent to set(keypath, undefined).
+   * @param {Array} keypath The key path in the object tree.
+   */
+  remove(keypath) {
+    this.set(keypath, undefined);
+  }
+
+  /**
+   * Push the provided value(s) to the specified keypath.
+   * If there's nothing at that path, a new array will be created.
+   * If there's a non-array in that path, an error will be thrown.
+   * @param {Array} keypath The key path in the object tree.
+   * @param {...*} values The values to set.
+   */
+  push(keypath, ...values) {
+    if (!values.length) return;
+    let target = this.obj;
+    forEach(keypath, key => {
+      target = target[key];
+      return isObject(target);
+    });
+    if (isArray(target)) {
+      this.set(keypath.concat([target.length]), values[0]);
+    } else if (isUndefined(target)) {
+      this.set(keypath.concat([0]), values[0]);
+    } else {
+      throw Error("Provided keypath does not point to an array");
+    }
+    this.push(keypath, ...values.slice(1));
+  }
+
+  /**
+   * Pop a value from the array in the specified path.
+   * If there's a non-array in that path, an error will be thrown.
+   * @param {Array} keypath The key path in the object tree.
+   */
+  pop(keypath) {
+    let target = this.obj;
+    forEach(keypath, key => {
+      target = target[key];
+      if (!isObject(target)) {
+        return false;
+      }
+    });
+    if (isArray(target)) {
+      let i = target.length - 1;
+      if (i < 0) { i = 0; }
+      this.set(keypath.concat([i]), undefined);
+    } else {
+      throw Error("Provided keypath does not point to an array");
+    }
+  }
    * Called with one change entry.
    * @callback ObjectModifier~changesCallback
    * @param {Array} keypath The keypath of the change.
@@ -120,6 +172,7 @@ class ObjectModifier {
    */
   static _generateRemovalChanges(val) {
     const res = [];
+    if (!isUndefined(val)) {
     if (isObject(val)) {
       forEach(keys(val), key => {
         forEach(ObjectModifier._generateRemovalChanges(val[key]), c => {
@@ -133,6 +186,7 @@ class ObjectModifier {
       oldVal: val,
       newVal: undefined
     });
+    }
     return res;
   }
 
