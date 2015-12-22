@@ -40,11 +40,11 @@ export default class ObjectModifier {
     // attempt to reset the keypath (remove whatever is there now):
     try {
       // _setPrimitiveDeep will throw if the path doesn't exist
-      const removedVal = _setPrimitiveDeep(this.obj, keypath, undefined);
+      const removedVal = ObjectModifier._setPrimitiveDeep(this.obj, keypath, undefined);
       // if the path does exist, and the value under it was not undefined,
       // report removals for all primitive values in the removed object tree.
       if (!isUndefined(removedVal)) {
-        forEach(_generateRemovalChanges(removedVal), c => {
+        forEach(ObjectModifier._generateRemovalChanges(removedVal), c => {
           c.keypath = keypath.concat(c.keypath);
           this.changes.push(c);
         });
@@ -89,7 +89,7 @@ export default class ObjectModifier {
     // the following call will always return undefined (the old value), since
     // we either deleted this path in this.set(), or ensurePath created an
     // undefined value under this path.
-    _setPrimitiveDeep(this.obj, keypath, newVal);
+    ObjectModifier._setPrimitiveDeep(this.obj, keypath, newVal);
     // report the creation of new paths:
     forEach(newPaths, p => {
       this.changes.push({
@@ -102,61 +102,63 @@ export default class ObjectModifier {
     this.changes.push({ oldVal: undefined, newVal, keypath });
   }
 
-}
-
-/**
- * Generate change entries as if all the primitive values in the given
- * object were set to undefined (removed).
- * @param  {*} val The value (primitive or object).
- * @return {Array} Array of change entries.
- */
-function _generateRemovalChanges(val) {
-  const res = [];
-  if (isObject(val)) {
-    forEach(keys(val), key => {
-      forEach(_generateRemovalChanges(val[key]), c => {
-        c.keypath = [key].concat(c.keypath);
-        res.push(c);
+  /**
+   * Generate change entries as if all the primitive values in the given
+   * object were set to undefined (setting to undefined is equivalent to
+   * removing).
+   * @param  {*} val The value (primitive or object).
+   * @return {Array} Array of change entries.
+   * @private
+   */
+  static _generateRemovalChanges(val) {
+    const res = [];
+    if (isObject(val)) {
+      forEach(keys(val), key => {
+        forEach(ObjectModifier._generateRemovalChanges(val[key]), c => {
+          c.keypath = [key].concat(c.keypath);
+          res.push(c);
+        });
       });
-    });
-  }
-  res.push({
-    keypath: [],
-    oldVal: val,
-    newVal: undefined
-  });
-  return res;
-}
-
-/**
- * Sets a primitive value under the specified keypath in the object.
- * If value is undefined, whatever is under this keypath will attempt to be
- * removed. If it's the last element of an array, it will be popped. If it's
- * an element in the middle of an array, it will be deleted (its index will not
- * exist, and the array will become sparse). If it's an object property, it will
- * be deleted.
- * @param {Object} obj The object to modify
- * @param {Array} keypath The keypath of the value
- * @param {Primitive} newVal The value to set
- * @return {*} The old value under this path (or undefined if it didn't exist)
- * @private
- */
-function _setPrimitiveDeep(obj, keypath, newVal) {
-  const child = obj[keypath[0]];
-  if (keypath.length === 1) {
-    obj[keypath[0]] = newVal;
-    // do some cleanup in obj if possible:
-    if (isUndefined(newVal)) {
-      if (isArray(obj) && last(obj) === obj[keypath[0]]) {
-        // if it's the last element of an array, pop it
-        // (delete doesn't modify the length of the array).
-        obj.pop();
-      } else {
-        delete obj[keypath[0]];
-      }
     }
-    return child;
+    res.push({
+      keypath: [],
+      oldVal: val,
+      newVal: undefined
+    });
+    return res;
   }
-  // walk down the object
-  return _setPrimitiveDeep(child, keypath.slice(1), newVal);
+
+  /**
+   * Sets a primitive value under the specified keypath in the object.
+   * If value is undefined, whatever is under this keypath will attempt to be
+   * removed. If it's the last element of an array, it will be popped. If it's
+   * an element in the middle of an array, it will be deleted (its index will not
+   * exist, and the array will become sparse). If it's an object property, it will
+   * be deleted.
+   * @param {Object} obj The object to modify
+   * @param {Array} keypath The keypath of the value
+   * @param {Primitive} newVal The value to set
+   * @return {*} The old value under this path (or undefined if it didn't exist)
+   * @private
+   */
+  static _setPrimitiveDeep(obj, keypath, newVal) {
+    const child = obj[keypath[0]];
+    if (keypath.length === 1) {
+      obj[keypath[0]] = newVal;
+      // do some cleanup in obj if possible:
+      if (isUndefined(newVal)) {
+        if (isArray(obj) && last(obj) === obj[keypath[0]]) {
+          // if it's the last element of an array, pop it
+          // (delete doesn't modify the length of the array).
+          obj.pop();
+        } else {
+          delete obj[keypath[0]];
+        }
+      }
+      return child;
+    }
+    // walk down the object
+    return ObjectModifier._setPrimitiveDeep(child, keypath.slice(1), newVal);
+  }
+
 }
