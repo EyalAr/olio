@@ -119,11 +119,24 @@ class ObjectModifier {
       throw Error("Provided keypath does not point to an array");
     }
   }
+
+  /**
+   * Remove obselete changes from the history.
+   * Any change which indicates a value which no longer exists will be removed.
+   */
+  compact() {
+    const changesTree = this._generateChangesTree();
+    ObjectModifier._compactChangesTree(changesTree);
+    this.changes = ObjectModifier._zipChangesTree(changesTree);
+  }
+
+  /**
    * Called with one change entry.
    * @callback ObjectModifier~changesCallback
    * @param {Array} keypath The keypath of the change.
    * @param {*} newVal The value after the change.
    * @param {*} oldVal The value before the change.
+   * @param {Boolean} seen Was this change iterated before.
    */
 
   /**
@@ -135,6 +148,32 @@ class ObjectModifier {
     forEach(this.changes, change => {
       cb(change.keypath, change.newVal, change.oldVal);
     });
+  }
+
+  /**
+   * Generate a tree from the list of changes.
+   * A path in the tree corresponds to a path in the modified object.
+   * Each node contains all the changes made to its path.
+   * @return {Object} Tree of changes.
+   * @private
+   */
+  _generateChangesTree() {
+    const changesTree = { children: {}, changes: [] };
+    this.forEachChange((path, newVal, oldVal, seen) => {
+      let target = changesTree;
+      // find the correct target node to place the change in:
+      forEach(path, key => {
+        if (isUndefined(target.children[key])) {
+          target.children[key] = {
+            changes: [],
+            children: {}
+          };
+        }
+        target = target.children[key];
+      });
+      target.changes.push({ newVal, oldVal, seen });
+    });
+    return changesTree;
   }
 
   /**
@@ -160,6 +199,66 @@ class ObjectModifier {
     });
     // as mentioned above, the old value will always be undefined
     this.changes.push({ oldVal: undefined, newVal, keypath });
+  }
+
+  /**
+   * Generate an array of changes from a changes tree.
+   * @param  {Object} changesTree The tree which was generated
+   * by {@link _generateChangesTree}.
+   * @return {Array} List of changes.
+   * @see  _generateChangesTree
+   */
+  static _zipChangesTree(changesTree) {
+    const changes = [];
+    forEach(changesTree.changes, c => {
+      changes.push({
+        keypath: [],
+        oldVal: c.oldVal,
+        newVal: c.newVal,
+        seen: c.seen
+      });
+    });
+    forEach(changesTree.children, (child, childKey) => {
+      forEach(ObjectModifier._zipChangesTree(child), c => {
+        changes.push({
+          keypath: [childKey].concat(c.keypath),
+          oldVal: c.oldVal,
+          newVal: c.newVal,
+          seen: c.seen
+        });
+      });
+    });
+    return changes;
+  }
+
+  /**
+   * Walk through each of the nodes of the tree an compact its list of changes.
+   * Any two changes that cancel each other will be removed.
+   * Any two changes which share a middle value will be merged into one change.
+   * Any change with equal old and new values will be removed.
+   * @return {Object} Tree of changes.
+   */
+  static _compactChangesTree(changesTree) {
+    let i = changesTree.changes.length - 1,
+        cPrev, cCur;
+    while (i > 0) {
+      cCur = changesTree.changes[i];
+      cPrev = changesTree.changes[i - 1];
+      if (cCur.oldVal === cPrev.newVal) {
+        changesTree.changes.splice(i - 1, 2);
+        if (cPrev.oldVal !== cCur.newVal) {
+          changesTree.changes.push({
+            oldVal: cPrev.oldVal,
+            newVal: cCur.newVal,
+            seen: cCur.seen
+          });
+        } else {
+          i--;
+        }
+      }
+      i--;
+    }
+    forEach(changesTree.children, ObjectModifier._compactChangesTree);
   }
 
   /**
