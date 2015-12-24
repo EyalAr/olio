@@ -5,6 +5,7 @@ import {
   isUndefined,
   isArray,
   last,
+  first,
   filter
 } from "lodash";
 
@@ -94,7 +95,7 @@ class ObjectModifier {
     } else if (isUndefined(target)) {
       this.set(keypath.concat([0]), values[0]);
     } else {
-      throw Error("Provided keypath does not point to an array");
+      throw Error("Provided keypath does not point to an array. " + keypath);
     }
     this.push(keypath, ...values.slice(1));
   }
@@ -117,7 +118,7 @@ class ObjectModifier {
       if (i < 0) { i = 0; }
       this.set(keypath.concat([i]), undefined);
     } else {
-      throw Error("Provided keypath does not point to an array");
+      throw Error("Provided keypath does not point to an array. " + keypath);
     }
   }
 
@@ -128,6 +129,17 @@ class ObjectModifier {
   compact() {
     const changesTree = this._generateChangesTree();
     ObjectModifier._compactChangesTree(changesTree);
+    this.changes = ObjectModifier._zipChangesTree(changesTree);
+  }
+
+  /**
+   * Compress the history of changes into only the neccesary changes to
+   * reconstruct the current state of the object. This looses history of
+   * nested nodes.
+   */
+  compress() {
+    const changesTree = this._generateChangesTree();
+    ObjectModifier._compressChangesTree(changesTree);
     this.changes = ObjectModifier._zipChangesTree(changesTree);
   }
 
@@ -275,6 +287,24 @@ class ObjectModifier {
       i--;
     }
     forEach(changesTree.children, ObjectModifier._compactChangesTree);
+  }
+
+  /**
+   * Walk through each of the nodes of the tree an compress it to at most one
+   * change. Essentially losing the history of the node's changes. If the node
+   * has a change, remove the history of its children.
+   * @return {Object} Tree of changes.
+   */
+  static _compressChangesTree(changesTree) {
+    if (changesTree.changes.length) {
+      const cLast = last(changesTree.changes),
+            cFirst = first(changesTree.changes),
+            newVal = cLast.newVal,
+            oldVal = cFirst.oldVal;
+      changesTree.changes = [{ oldVal, newVal }];
+      changesTree.children = {};
+    }
+    forEach(changesTree.children, ObjectModifier._compressChangesTree);
   }
 
   /**
