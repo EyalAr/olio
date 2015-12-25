@@ -7,8 +7,10 @@ import {
 import ObjectModifier from "./objectModifier";
 
 /**
- * Apply a diff to an object.  
- * Modifies the object.  
+ * Apply a diff to an object.
+ *
+ * Modifies the object.
+ *
  * In strict mode, the old value of each changed property will be verified. If
  * there is a mismatch an error will be thrown.
  * @param {Object} target The target object to patch.
@@ -19,7 +21,7 @@ import ObjectModifier from "./objectModifier";
  */
 function patch(target, diff, strict = true) {
   const modifier = new ObjectModifier(target);
-  forEach(diff, _patchEntry.bind(null, target, modifier, strict));
+  forEach(diff, patchEntry.bind(null, target, modifier, strict));
   modifier.compact();
   return modifier;
 }
@@ -27,7 +29,7 @@ function patch(target, diff, strict = true) {
 /**
  * @private
  */
-function _patchEntry(o, m, strict, p) {
+function patchEntry(o, m, strict, p) {
   const path = p[0],
         type = p[1];
   let expectedOldVal, actualOldVal, newVal;
@@ -77,4 +79,4 @@ function _get(o, path) {
   return _get(o[path[0]], path.slice(1));
 }
 
-export default patch;
+export { patch, patchEntry };

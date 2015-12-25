@@ -4,19 +4,24 @@ import {
   intersection,
   keys,
   difference,
-  isObject,
-  isUndefined
+  isUndefined,
+  isPlainObject,
+  isArray,
+  isEmpty
 } from "lodash";
 
 import ObjectModifier from "./objectModifier";
 
 /**
  * A list of differences.
- * First element indicates the path in the object.  
+ *
+ * First element indicates the path in the object.
+ *
  * Second element indicates the type of difference:
- * - "a" - add
- * - "u" - update
- * - "d" - delete
+ *
+ * 0. "a" - add
+ * 0. "u" - update
+ * 0. "d" - delete
  *
  * Third element is the new value on add operation, or the old value on update
  * and delete operations.
@@ -31,10 +36,14 @@ import ObjectModifier from "./objectModifier";
  * @return {Diff} The list of differences between the objects.
  */
 function diff(base, target) {
-  const o1Clone = cloneDeep(base),
-        modifier = new ObjectModifier(o1Clone),
-        res = [];
-  _diff([], o1Clone, target, modifier);
+  const baseClone = cloneDeep(base),
+        modifier = new ObjectModifier(baseClone);
+  _diff([], baseClone, target, modifier);
+  return generateDiffFromChanges(modifier);
+}
+
+function generateDiffFromChanges(modifier) {
+  const res = [];
   modifier.compact();
   modifier.compress();
   modifier.forEachChange((path, newVal, oldVal) => {
@@ -53,15 +62,19 @@ function diff(base, target) {
  * @private
  */
 function _diff(path, o1, o2, modifier) {
-  if (!isObject(o2)) {
+  if (isEmpty(o2)) {
     modifier.set(path, o2);
     return;
   }
   forEach(intersection(keys(o1), keys(o2)), k => {
-    if (!isObject(o1[k])) {
-      modifier.set(path.concat([k]), o2[k]);
+    const nextPath = path.concat([k]),
+          sameType = (isPlainObject(o1[k]) && isPlainObject(o2[k])) ||
+                     (isArray(o1[k]) && isArray(o2[k]));
+    if (sameType) {
+      _diff(nextPath, o1[k], o2[k], modifier);
+    } else {
+      modifier.set(nextPath, o2[k]);
     }
-    _diff(path.concat([k]), o1[k], o2[k], modifier);
   });
   forEach(difference(keys(o1), keys(o2)), k => {
     modifier.remove(path.concat([k]));
@@ -71,4 +84,4 @@ function _diff(path, o1, o2, modifier) {
   });
 }
 
-export default diff;
+export { diff, generateDiffFromChanges };
