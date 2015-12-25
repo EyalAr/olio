@@ -7,8 +7,8 @@ import {
 } from "lodash";
 
 import {
-  EventEmitter2 as EventEmitter
-} from "eventemitter2";
+  EventEmitter
+} from "events";
 import ObjectModifier from "./utils/objectModifier";
 import { generateDiffFromChanges } from "./utils/diff";
 import { patchEntry } from "./utils/patch";

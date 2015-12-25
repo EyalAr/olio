@@ -19,7 +19,6 @@
   "author": "Eyal Arubas <eyalarubas@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "eventemitter2": "^0.4.14",
     "lodash": "^3.10.1"
   },
   "devDependencies": {
