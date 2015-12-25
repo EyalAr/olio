@@ -61,6 +61,10 @@ class State extends EventEmitter {
     return p;
   }
 
+  toJSON() {
+    return JSON.stringify(this.state);
+  }
+
   static clone(other) {
     return new State(cloneDeep(other.state));
   }
