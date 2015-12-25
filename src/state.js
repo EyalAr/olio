@@ -3,13 +3,15 @@ import {
   isPlainObject,
   isString,
   forEach,
-  isArray
+  cloneDeep
 } from "lodash";
 
 import {
   EventEmitter2 as EventEmitter
 } from "eventemitter2";
 import ObjectModifier from "./utils/objectModifier";
+import { generateDiffFromChanges } from "./utils/diff";
+import { patchEntry } from "./utils/patch";
 
 const PATH_DELIMITER = ".";
 
@@ -29,22 +31,38 @@ class State extends EventEmitter {
     }
     this.modifier.set(keypath, value);
     this.modifier.forEachNewChange((path, newVal, oldVal) => {
-      this.emit("change", { path, newVal, oldVal });
+      this.emit("change", path, newVal, oldVal);
     });
   }
 
-  getPatch() {
+  applyPatch(patch, strict = true) {
+    const failedPatches = [];
+    forEach(patch, entry => {
+      try {
+        patchEntry(this.state, this.modifier, strict, entry);
+      } catch (e) {
+        failedPatches.push(e);
+      }
+    });
     this.modifier.compact();
-    const patch = [];
-    this.modifier.forEachChange((path, newVal) => {
-      patch.push([path, isPlainObject(newVal) ? {} : isArray(newVal) ? [] : newVal]);
+    this.modifier.forEachNewChange((path, newVal, oldVal) => {
+      this.emit("change", path, newVal, oldVal);
     });
-    // this.modifier.reset();
-    return patch;
+    if (strict && failedPatches.length) {
+      const err = Error(failedPatches.length + " failed patch entries");
+      err.failedPatches = failedPatches;
+      throw err;
+    }
   }
 
-  applyPatch(patch) {
-    forEach(patch, item => this.set(...item));
+  getLatestPatch() {
+    const p = generateDiffFromChanges(this.modifier);
+    this.modifier.reset();
+    return p;
+  }
+
+  static clone(other) {
+    return new State(cloneDeep(other.state));
   }
 }
 
