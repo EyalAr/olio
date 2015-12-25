@@ -4,9 +4,12 @@ import {
   keys,
   isUndefined,
   isArray,
+  isEmpty,
+  isString,
   last,
   first,
-  filter
+  filter,
+  eq
 } from "lodash";
 
 import ensurePath from "./ensurePath";
@@ -56,7 +59,9 @@ class ObjectModifier {
     // if array or plain object, walk down the object tree and recurse
     // calls to 'set' with the respective keypath.
     // this way we only have to deal with setting primitive values.
-    if (isObject(newVal)) {
+    // we use 'isEmptry', because we treat empty objects and arrays as primitive
+    // values.
+    if (!isEmpty(newVal) && !isString(newVal)) {
       // deep traversal of the object/array. will walk the object tree
       // and set the value at each level.
       // will loop over an array's indices, or a plain object's keys:
@@ -277,9 +282,9 @@ class ObjectModifier {
     while (i > 0) {
       cCur = changesTree.changes[i];
       cPrev = changesTree.changes[i - 1];
-      if (cCur.oldVal === cPrev.newVal) {
+      if (eq(cCur.oldVal, cPrev.newVal)) {
         changesTree.changes.splice(i - 1, 2);
-        if (cPrev.oldVal !== cCur.newVal) {
+        if (!eq(cPrev.oldVal, cCur.newVal)) {
           changesTree.changes.push({
             oldVal: cPrev.oldVal,
             newVal: cCur.newVal,
