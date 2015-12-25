@@ -15,15 +15,18 @@ import {
 import ensurePath from "./ensurePath";
 
 /**
- * A wrapper around a plain object.  
+ * A wrapper around a plain object.
+ *
  * Can be used to set/remove/push/pop values from the object in a nested
- * manner.  
+ * manner.
+ *
  * Will track all modifications done to the wrapped object.
  */
 class ObjectModifier {
 
   /**
-   * Construct a new ObjectModifier.  
+   * Construct a new ObjectModifier.
+   *
    * @param  {Object} obj The object to modify.
    */
   constructor(obj) {
@@ -32,8 +35,10 @@ class ObjectModifier {
   }
 
   /**
-   * Set a value for the specified key path in the object.  
-   * Overriding an existing value will be considered as two actions:  
+   * Set a value for the specified key path in the object.
+   *
+   * Overriding an existing value will be considered as two actions:
+   *
    * 1. setting the old value to undefined.
    * 2. setting the new value.
    *
@@ -83,8 +88,10 @@ class ObjectModifier {
   }
 
   /**
-   * Push the provided value(s) to the specified keypath.  
-   * If there's nothing at that path, a new array will be created.  
+   * Push the provided value(s) to the specified keypath.
+   *
+   * If there's nothing at that path, a new array will be created.
+   *
    * If there's a non-array in that path, an error will be thrown.
    * @param {Array} keypath The key path in the object tree.
    * @param {...*} values The values to set.
@@ -107,8 +114,10 @@ class ObjectModifier {
   }
 
   /**
-   * Pop a value from the array in the specified path.  
-   * If there's a non-array in that path, an error will be thrown.  
+   * Pop a value from the array in the specified path.
+   *
+   * If there's a non-array in that path, an error will be thrown.
+   *
    * @param {Array} keypath The key path in the object tree.
    */
   pop(keypath) {
@@ -133,7 +142,8 @@ class ObjectModifier {
   }
 
   /**
-   * Remove obselete changes from the history.  
+   * Remove obselete changes from the history.
+   *
    * Any change which indicates a value which no longer exists will be removed.
    */
   compact() {
@@ -154,7 +164,8 @@ class ObjectModifier {
   }
 
   /**
-   * Called with one change entry.  
+   * Called with one change entry.
+   *
    * @callback ObjectModifier~changesCallback
    * @param {Array} keypath The keypath of the change.
    * @param {*} newVal The value after the change.
@@ -163,7 +174,8 @@ class ObjectModifier {
    */
 
   /**
-   * Loop over the changes made to the object.  
+   * Loop over the changes made to the object.
+   *
    * @param {ObjectModifier~changesCallback} cb Callback function to be called
    * with each change.
    */
@@ -189,8 +201,10 @@ class ObjectModifier {
   }
 
   /**
-   * Generate a tree from the list of changes.  
-   * A path in the tree corresponds to a path in the modified object.  
+   * Generate a tree from the list of changes.
+   *
+   * A path in the tree corresponds to a path in the modified object.
+   *
    * Each node contains all the changes made to its path.
    * @return {Object} Tree of changes.
    * @private
@@ -270,9 +284,12 @@ class ObjectModifier {
   }
 
   /**
-   * Walk through each of the nodes of the tree an compact its list of changes.  
-   * Any two changes that cancel each other will be removed.  
-   * Any two changes which share a middle value will be merged into one change.  
+   * Walk through each of the nodes of the tree an compact its list of changes.
+   *
+   * Any two changes that cancel each other will be removed.
+   *
+   * Any two changes which share a middle value will be merged into one change.
+   *
    * Any change with equal old and new values will be removed.
    * @return {Object} Tree of changes.
    */
@@ -346,7 +363,8 @@ class ObjectModifier {
   }
 
   /**
-   * Sets a primitive value under the specified keypath in the object.  
+   * Sets a primitive value under the specified keypath in the object.
+   *
    * If value is undefined, whatever is under this keypath will attempt to be
    * removed. If it's the last element of an array, it will be popped. If it's
    * an element in the middle of an array, it will be deleted (its index will not
