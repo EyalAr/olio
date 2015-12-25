@@ -123,6 +123,10 @@ class ObjectModifier {
     }
   }
 
+  reset() {
+    this.changes.splice(0, this.changes.length);
+  }
+
   /**
    * Remove obselete changes from the history.  
    * Any change which indicates a value which no longer exists will be removed.
