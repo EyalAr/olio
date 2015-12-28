@@ -1,28 +1,61 @@
 import State from "../../../src/state";
 import Sync from "../../../src/sync";
 import request from "superagent";
-import Ractive from "ractive";
+import {
+  init as d_init,
+  addDrawing as d_addDrawing,
+  moveDrawing as d_moveDrawing,
+  removeDrawing as d_removeDrawing,
+  onDrawingAdd as d_onDrawingAdd,
+  onDrawingMove as d_onDrawingMove,
+  onDrawingRemove as d_onDrawingRemove,
+  toggleDraw as d_toggleDraw,
+  toggleMove as d_toggleMove
+} from "./drawing";
 
-const SYNC_INTERVAL_MS = 2000; // 2 sec
+const SYNC_INTERVAL_MS = 200; // 2 sec
 
 console.log("Connecting...");
 
 request.get("/connect").end((err, res) => {
+
   console.log("Connected");
 
   const myId = res.body.clientId,
-        state = new State(JSON.parse(res.body.initialState)),
+        state = new State(res.body.initialState),
         sync = new Sync(state);
 
-  const ractive = new Ractive({
-    el: document.getElementById("container"),
-    template: "<textarea value='{{content}}'></textarea>",
-    data: JSON.parse(res.body.initialState)
-  });
+  document.getElementById("client-id").innerHTML = "Connected as client " + myId;
+
+  d_init(
+    document.getElementById("drawing-canvas"),
+    res.body.initialState.shapes,
+    myId
+  );
+
+  document.getElementById("toggle-draw").onclick = d_toggleDraw;
+  document.getElementById("toggle-move").onclick = d_toggleMove;
 
   sync.addPeer("server");
-  state.on("change", (path, val) => ractive.set(path.join("."), val));
-  ractive.observe("content", (newVal, oldVal, keypath) => state.set(["content"], newVal));
+
+  d_onDrawingAdd((id, shapeObj) => state.set(["shapes", id], shapeObj));
+  d_onDrawingRemove((id, shapeObj) => state.set(["shapes", id], undefined));
+  d_onDrawingMove((id, left, top) => {
+    state.set(["shapes", id, "pos"], {top, left});
+  });
+  state.on("change", (path, val, old) => {
+    if (path[0] === "shapes") {
+      if (path.length === 2) {
+        if (!old) {
+          d_addDrawing(val, path[1]);
+        } else if (!val) {
+          d_removeDrawing(path[1]);
+        }
+      } else if (path[2] === "pos") {
+        d_moveDrawing(path[1], val.left, val.top);
+      }
+    }
+  });
 
   syncCycle();
 

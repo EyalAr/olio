@@ -2,9 +2,16 @@
 <html>
 <head>
     <title>Collaborative editing</title>
+    <style type="text/css">
+        .canvas-container {
+            border: 1px solid black;
+        }
+    </style>
 </head>
 <body>
-<div id="container"></div>
+<div id="client-id">Connecting...</div>
+<canvas id="drawing-canvas"></canvas>
+<button id="toggle-draw">draw</button><button id="toggle-move">move</button>
 </body>
 <script type="text/javascript" src="build/index.js"></script>
 </html>
