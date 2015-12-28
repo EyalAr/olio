@@ -26,13 +26,13 @@ class Sync {
     }
     peer.expectingAnswer = true;
     // should we bother calculating a diff?
-    if (peer.isUpToDate) {
-      return [];
+    if (!peer.isUpToDate) {
+      const p = diff(peer.state.state, this.myState.state);
+      peer.state.applyPatch(p);
+      peer.isUpToDate = true;
+      return p;
     }
-    const p = diff(peer.state.state, this.myState.state);
-    peer.state.applyPatch(p);
-    peer.isUpToDate = true;
-    return p;
+    return [];
   }
 
   receive(id, p, preferRemote = true) {
@@ -56,18 +56,18 @@ class Sync {
       // this function received the answer.
       // no need to send anything back.
       peer.expectingAnswer = false;
-      return;
+      return [];
     }
     // this function was called to initiate a sync cycle.
     // we need to send an answer back.
     // but let's see if we should bother calculating a diff:
-    if (peer.isUpToDate) {
-      return [];
+    if (!peer.isUpToDate) {
+      const answer = diff(peer.state.state, this.myState.state);
+      peer.state.applyPatch(answer, true);
+      peer.isUpToDate = true;
+      return answer;
     }
-    const answer = diff(peer.state.state, this.myState.state);
-    peer.state.applyPatch(answer, true);
-    peer.isUpToDate = true;
-    return answer;
+    return [];
   }
 }
 
