@@ -328,7 +328,10 @@ class ObjectModifier {
             cFirst = first(changesTree.changes),
             newVal = cLast.newVal,
             oldVal = cFirst.oldVal;
-      changesTree.changes = [{ oldVal, newVal }];
+      changesTree.changes = [];
+      if (!eq(oldVal, newVal)) {
+        changesTree.changes.push({ oldVal, newVal });
+      }
       changesTree.children = {};
     }
     forEach(changesTree.children, ObjectModifier._compressChangesTree);
