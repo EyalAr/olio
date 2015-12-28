@@ -30,6 +30,7 @@ class State extends EventEmitter {
       keypath = keypath.split(PATH_DELIMITER);
     }
     this.modifier.set(keypath, value);
+    this.modifier.compact();
     this.modifier.forEachNewChange((path, newVal, oldVal) => {
       this.emit("change", path, newVal, oldVal);
     });
@@ -62,7 +63,7 @@ class State extends EventEmitter {
   }
 
   toJSON() {
-    return JSON.stringify(this.state);
+    return this.state;
   }
 
   static clone(other) {
