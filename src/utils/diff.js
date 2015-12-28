@@ -44,7 +44,6 @@ function diff(base, target) {
 
 function generateDiffFromChanges(modifier) {
   const res = [];
-  modifier.compact();
   modifier.compress();
   modifier.forEachChange((path, newVal, oldVal) => {
     const uold = isUndefined(oldVal),
