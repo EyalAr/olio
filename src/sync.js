@@ -6,51 +6,68 @@ class Sync {
   constructor(init) {
     this.myState = init;
     this.peers = {};
-    this.myState.on("change", (path, newVal) => {
-      forEach(this.peers, (peer, id) => {
-        peer.local.set(path, newVal);
-      });
-    });
+    this.myState.on("change", () => forEach(this.peers, peer => {
+      peer.isUpToDate = false;
+    }));
   }
 
   addPeer(id) {
     this.peers[id] = {
-      local: State.clone(this.myState),
-      remote: State.clone(this.myState),
-      pendingAnswer: false
+      state: State.clone(this.myState),
+      expectingAnswer: false,
+      isUpToDate: false
     };
   }
 
   patchPeer(id) {
     const peer = this.peers[id];
-    if (peer.pendingAnswer) {
-      throw Error("Pending answer from peer");
+    if (peer.expectingAnswer) {
+      throw Error("Already expecting answer from peer");
     }
-    const p = peer.local.getLatestPatch();
-    peer.remote.applyPatch(p);
-    peer.pendingAnswer = true;
+    peer.expectingAnswer = true;
+    // should we bother calculating a diff?
+    if (peer.isUpToDate) {
+      return [];
+    }
+    const p = diff(peer.state.state, this.myState.state);
+    peer.state.applyPatch(p);
+    peer.isUpToDate = true;
     return p;
   }
 
   receive(id, p, preferRemote = true) {
-    const peer = this.peers[id],
-          a = peer.local.getLatestPatch();
-    try {
-      peer.local.applyPatch(p, !preferRemote);
-    } catch (e) { if (preferRemote) { throw e; } }
-    try {
-      peer.remote.applyPatch(p, !preferRemote);
-    } catch (e) { if (preferRemote) { throw e; } }
-    try {
-      this.myState.applyPatch(p, !preferRemote);
-    } catch (e) { if (preferRemote) { throw e; } }
-    // were we waiting for an answer from this peer?
-    if (peer.pendingAnswer) {
-      // no need to send anything back
-      peer.pendingAnswer = false;
+    const peer = this.peers[id];
+    if (p.length) {
+      try {
+        peer.state.applyPatch(p, !preferRemote);
+      } catch (e) { if (preferRemote) { throw e; } }
+      try {
+        this.myState.applyPatch(p, !preferRemote);
+      } catch (e) {
+        if (preferRemote) { throw e; }
+      } finally {
+        forEach(this.peers, peer => {
+          peer.isUpToDate = false;
+        });
+      }
+    }
+    // were we expecting an answer from this peer?
+    if (peer.expectingAnswer) {
+      // this function received the answer.
+      // no need to send anything back.
+      peer.expectingAnswer = false;
       return;
     }
-    return a;
+    // this function was called to initiate a sync cycle.
+    // we need to send an answer back.
+    // but let's see if we should bother calculating a diff:
+    if (peer.isUpToDate) {
+      return [];
+    }
+    const answer = diff(peer.state.state, this.myState.state);
+    peer.state.applyPatch(answer, true);
+    peer.isUpToDate = true;
+    return answer;
   }
 }
 
