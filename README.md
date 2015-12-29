@@ -1,17 +1,26 @@
 # olio
 
 Synchronized collaborative state editing.  
-Use as a client or as a server which syncs with multiple clients.
 
-Clients generate sync requests and servers generate sync responses. A sync
-request contains changes to state made by the client which the server should
-apply. The response from the server contains changes made on the server since
-the client's last sync.
+Use as:
+
+0. A client which syncs with a server.
+0. A server which syncs with multiple clients.
+0. A client which syncs directly with other clients in a peer-to-peer network.
+
+Peers generate sync requests and sync responses. A sync request contains changes
+to state made by peer A which peer B should apply. The response from peer B
+contains changes since peer's A last sync.
 
 Based on [Differential Synchronization by Neil Fraser](https://neil.fraser.name/writing/sync/eng047-fraser.pdf).
 
-![Demo](demo_draw.gif)
-![Demo](demo_write.gif)
+[Collaborative drawing demo:](examples/collab_app/draw_client)
+
+![Draw demo](demo_draw.gif)
+
+[Collaborative text editing demo:](examples/collab_app/write_client)
+
+![Text demo](demo_write.gif)
 
 ## API
 
@@ -45,7 +54,7 @@ require(['olio/sync'], function(Sync){ /* ... */ });
 
 `Sync` is a constructor which receives a state.
 
-`var sy = new State(state)`
+`var sy = new Sync(state)`
 
 ### Adding a peer
 
