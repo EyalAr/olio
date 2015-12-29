@@ -5,14 +5,12 @@ import { uniqueId, reduce } from "lodash";
 import bodyParser from "body-parser";
 
 const app = express(),
-      state = new State({
-        shapes: {}
-      }),
+      state = new State(),
       sync = new Sync(state),
       history = [];
 
 app.use(bodyParser.json());
-app.use(express.static("../client"));
+app.use(express.static("../write_client"));
 
 app.get("/connect", (req, res) => {
   const id = uniqueId();

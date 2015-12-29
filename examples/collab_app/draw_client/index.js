@@ -13,7 +13,7 @@ import {
   toggleMove as d_toggleMove
 } from "./drawing";
 
-const SYNC_INTERVAL_MS = 200; // 2 sec
+const SYNC_INTERVAL_MS = 100; // 1 sec
 
 console.log("Connecting...");
 

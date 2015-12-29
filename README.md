@@ -10,7 +10,8 @@ the client's last sync.
 
 Based on [Differential Synchronization by Neil Fraser](https://neil.fraser.name/writing/sync/eng047-fraser.pdf).
 
-![Demo](demo.gif)
+![Demo](demo_draw.gif)
+![Demo](demo_write.gif)
 
 ## API
 

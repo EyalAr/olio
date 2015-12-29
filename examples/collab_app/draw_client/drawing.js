@@ -63,6 +63,7 @@ export function removeDrawing(id, fireCbs = true) {
 export function moveDrawing(id, x, y) {
   shapes[id].setLeft("left", x);
   shapes[id].setTop("top", y);
+  canvas.renderAll();
 }
 
 export function toggleDraw() {
