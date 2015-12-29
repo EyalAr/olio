@@ -8,7 +8,7 @@ import {
   onTextChange as w_onTextChange,
 } from "./write";
 
-const SYNC_INTERVAL_MS = 100; // 1 sec
+const SYNC_INTERVAL_MS = 500; // 0.5 sec
 
 console.log("Connecting...");
 
