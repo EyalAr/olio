@@ -62,8 +62,10 @@ function generateDiffFromChanges(modifier) {
  */
 function _diff(path, o1, o2, modifier) {
   if (isEmpty(o2)) {
-    modifier.set(path, o2);
-    return;
+    if (path.length) {
+      modifier.set(path, o2);
+      return;
+    }
   }
   forEach(intersection(keys(o1), keys(o2)), k => {
     const nextPath = path.concat([k]),
