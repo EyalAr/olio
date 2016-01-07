@@ -2,7 +2,7 @@ import State from "../../../src/state";
 import Sync from "../../../src/sync";
 import request from "superagent";
 import {
-  init as d_init,
+  init as w_init,
   setText as w_setText,
   setLineText as w_setLineText,
   onTextChange as w_onTextChange,
@@ -23,7 +23,7 @@ request.get("/connect").end((err, res) => {
 
   document.getElementById("client-id").innerHTML = "Connected as client " + myId;
 
-  d_init(
+  w_init(
     document.getElementById("write-container"),
     res.body.initialState.lines || [],
     myId
