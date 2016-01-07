@@ -1,5 +1,5 @@
-import State from "./src/state";
-import Sync from "./src/sync";
+import State from "../src/state";
+import Sync from "../src/sync";
 
 var c1s = new State(),
     c1sync = new Sync(c1s);
@@ -14,10 +14,10 @@ var ss = new State(),
 ssync.addPeer("client1");
 ssync.addPeer("client2");
 
-c1s.set("a", "hello");
-c1s.set("b", [1, 2]);
-c2s.set("a", "world");
-c2s.set("c", "foo");
+c1s.set("/a", "hello");
+c1s.set("/b", [1, 2]);
+c2s.set("/a", "world");
+c2s.set("/c", "foo");
 
 var c1p = c1sync.patchPeer("server");
 var sa = ssync.receive("client1", c1p, false);

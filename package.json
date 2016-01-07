@@ -19,6 +19,9 @@
   "author": "Eyal Arubas <eyalarubas@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "fast-json-patch": "^0.5.4",
+    "immutable": "^3.7.6",
+    "json-pointer": "^0.3.0",
     "lodash": "^3.10.1"
   },
   "devDependencies": {

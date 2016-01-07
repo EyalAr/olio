@@ -1,6 +1,6 @@
 import { forEach } from "lodash";
 import State from "./state";
-import { diff } from "./utils/diff";
+import diff from "./utils/diff";
 
 class Sync {
   constructor(init) {
@@ -27,7 +27,7 @@ class Sync {
     peer.expectingAnswer = true;
     // should we bother calculating a diff?
     if (!peer.isUpToDate) {
-      const p = diff(peer.state.state, this.myState.state);
+      const p = diff(peer.state, this.myState);
       peer.state.applyPatch(p);
       peer.isUpToDate = true;
       return p;
@@ -62,7 +62,7 @@ class Sync {
     // we need to send an answer back.
     // but let's see if we should bother calculating a diff:
     if (!peer.isUpToDate) {
-      const answer = diff(peer.state.state, this.myState.state);
+      const answer = diff(peer.state, this.myState);
       peer.state.applyPatch(answer, true);
       peer.isUpToDate = true;
       return answer;

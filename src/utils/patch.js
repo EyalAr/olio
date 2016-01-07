@@ -1,82 +1,104 @@
 import {
-  forEach,
-  isObject,
-  eq
+  last,
+  dropRight,
+  isString,
+  isUndefined
 } from "lodash";
+import Im from "immutable";
+import pointer from "json-pointer";
 
-import ObjectModifier from "./objectModifier";
+const ops = {
+        add: patchAdd,
+        remove: patchRemove,
+        replace: patchReplace,
+        copy: patchCopy,
+        move: patchMove,
+        test: patchTest
+      },
+      END_OF_LIST_TOKEN = "-",
+      LIST_ADD_INDICATOR_RE = new RegExp(`^(${END_OF_LIST_TOKEN}|(\\d+))$`),
+      LIST_INDICATOR_RE = /^\d+$/;
 
-/**
- * Apply a diff to an object.
- *
- * Modifies the object.
- *
- * In strict mode, the old value of each changed property will be verified. If
- * there is a mismatch an error will be thrown.
- * @param {Object} target The target object to patch.
- * @param {Diff} diff The diff to apply.
- * @param {Boolean} [strict=true] Should the patch be strict.
- * @return {ObjectModifier} An object modifier which can be used to get all the
- * changes done to the object.
- */
-function patch(target, diff, strict = true) {
-  const modifier = new ObjectModifier(target);
-  forEach(diff, patchEntry.bind(null, target, modifier, strict));
-  modifier.compact();
-  return modifier;
-}
-
-/**
- * @private
- */
-function patchEntry(o, m, strict, p) {
-  const path = p[0],
-        type = p[1];
-  let expectedOldVal, actualOldVal, newVal;
-  switch (type) {
-    case "a":
-      expectedOldVal = undefined;
-      newVal = p[2];
-      break;
-    case "u":
-      expectedOldVal = p[2];
-      newVal = p[3];
-      break;
-    case "d":
-      expectedOldVal = p[2];
-      newVal = undefined;
-      break;
-    default:
-      throw Error("Unknown patch entry type " + type);
+function patchAdd(base, path, value) {
+  const lastPath = last(path),
+        containerPath = dropRight(path),
+        container = base.getIn(containerPath);
+  if (isUndefined(container)) {
+    throw Error("Invalid path");
   }
-  if (strict) {
-    actualOldVal = _get(o, path);
-    if (!eq(actualOldVal, expectedOldVal)) {
-      _throwBaseError(expectedOldVal, actualOldVal);
+  if (LIST_ADD_INDICATOR_RE.test(lastPath)) {
+    if (Im.Iterable.isIndexed(container)) {
+      if (lastPath === END_OF_LIST_TOKEN) {
+        const listLen = container.count();
+        path = dropRight(path).concat(listLen);
+      }
+      return patchAddIndexed(base, path, value);
     }
   }
-  m.set(path, newVal);
+  return patchAddKeyed(base, path, value);
 }
 
-/**
- * @private
- */
-function _throwBaseError(expected, actual) {
-  throw Error("Base mismatch error. " + "Expected " + expected + " but found " + actual);
+function patchAddKeyed(base, path, value) {
+  return base.setIn(path, value);
 }
 
-/**
- * Get the value under the specified path in the object.
- * @private
- */
-function _get(o, path) {
-  if (!path.length) {
-    return o;
+function patchAddIndexed(base, path, value) {
+  const pathToList = dropRight(path),
+        indexInList = +last(path),
+        list = base.getIn(pathToList);
+  return base.setIn(pathToList, list.splice(indexInList, 0, value).toList());
+}
+
+function patchRemove(base, path) {
+  const lastPath = last(path);
+  if (LIST_INDICATOR_RE.test(lastPath)) {
+    const listPath = dropRight(path),
+          list = base.getIn(listPath);
+    if (Im.Iterable.isIndexed(list)) {
+      return patchRemoveIndexed(base, path);
+    }
   }
-  if (!isObject(o)) {
-    return undefined;
-  }
-  return _get(o[path[0]], path.slice(1));
+  return patchRemoveKeyed(base, path);
 }
 
-export { patch, patchEntry };
+function patchRemoveKeyed(base, path) {
+  return base.removeIn(path);
+}
+
+function patchRemoveIndexed(base, path) {
+  const pathToList = dropRight(path),
+        indexInList = +last(path),
+        list = base.getIn(pathToList);
+  return base.setIn(pathToList, list.splice(indexInList, 1).toList());
+}
+
+function patchReplace(base, path, value) {
+  return patchAdd(patchRemove(base, path), path, value);
+}
+
+function patchCopy(base, path, value, from) {
+  value = base.getIn(from);
+  return base.setIn(path, value);
+}
+
+function patchMove(base, path, value, from) {
+  return patchRemove(patchCopy(base, path, undefined, from), from);
+}
+
+function patchTest(base, path, value) {
+  if (Im.is(base.getIn(path), value)) {
+    return base;
+  }
+  throw Error("Test operation failed");
+}
+
+export default function patch(base, p) {
+  return p.reduce((acc, { op, path, value, from }) => {
+    return ops[op](
+      acc,
+      pointer.parse(path),
+      Im.fromJS(value),
+      isString(from) ? pointer.parse(from) : undefined
+    );
+  }, base);
+}

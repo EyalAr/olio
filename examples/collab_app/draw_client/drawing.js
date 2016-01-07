@@ -1,7 +1,8 @@
 import { fabric } from "fabric";
 import {
   forEach,
-  uniqueId
+  uniqueId,
+  keys
 } from "lodash";
 
 const shapes = {},
@@ -32,6 +33,10 @@ export function init(el, initShapes, myid) {
     forEach(removeCbs, cb => cb(sid));
   });
 };
+
+export function clearDrawings() {
+  forEach(keys(shapes), removeDrawing);
+}
 
 export function addDrawing(shape, id, fireCbs = true) {
   if (shapes[id]) { return; }

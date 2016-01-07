@@ -11,7 +11,7 @@ module.exports = {
     },
     resolve: {
         alias: {
-            "fabric": "./bower_components/fabric.js/dist/fabric.js"
+            "fabric": "./bower_components/fabric/dist/fabric.js"
         }
     },
     output: {

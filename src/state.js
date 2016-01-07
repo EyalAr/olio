@@ -2,73 +2,96 @@ import {
   isUndefined,
   isPlainObject,
   isString,
+  isArray,
   forEach,
-  cloneDeep
+  filter
 } from "lodash";
-
 import {
   EventEmitter
 } from "events";
-import ObjectModifier from "./utils/objectModifier";
-import { generateDiffFromChanges } from "./utils/diff";
-import { patchEntry } from "./utils/patch";
+import patch from "./utils/patch";
+import Im from "immutable";
+import Cursor from "immutable/contrib/cursor";
+import pointer from "json-pointer";
 
-const PATH_DELIMITER = ".";
+const MAX_HISTORY = 1000;
 
 class State extends EventEmitter {
   constructor(init) {
     super();
-    if (!isPlainObject(init) && !isUndefined(init)) {
-      throw Error("Initial state must be a plain object");
+    if (init instanceof Im.Collection.Keyed) {
+      this.state = init;
+    } else if (isPlainObject(init)) {
+      this.state = Im.fromJS(init);
+    } else if (isUndefined(init)) {
+      this.state = new Im.Map();
+    } else {
+      throw Error("Initial state must be a plain object or an Immutable keyed object");
     }
-    this.state = init || {};
-    this.modifier = new ObjectModifier(this.state);
+    this.cur = Cursor.from(this.state, this._cursorUpdateCb.bind(this));
+    this.history = [this.state];
   }
 
-  set(keypath, value) {
-    if (isString(keypath)) {
-      keypath = keypath.split(PATH_DELIMITER);
+  _cursorUpdateCb(state, prev, path) {
+    if (state === prev) { return; }
+    let valBefore = prev.getIn(path),
+        valAfter = state.getIn(path);
+    // we want to make sure that internally the state contains only immutable
+    // structures.
+    if (isPlainObject(valAfter) || isArray(valAfter)) {
+      this.set(path, Im.fromJS(valAfter));
+      return;
     }
-    this.modifier.set(keypath, value);
-    this.modifier.compact();
-    this.modifier.forEachNewChange((path, newVal, oldVal) => {
-      this.emit("change", path, newVal, oldVal);
-    });
+    // the values we report on change should be regular JS
+    if (Im.Iterable.isIterable(valAfter)) {
+      valAfter = valAfter.toJS();
+    }
+    if (Im.Iterable.isIterable(valBefore)) {
+      valBefore = valBefore.toJS();
+    }
+    this.state = state;
+    if (this.history.length === MAX_HISTORY) {
+      this.history.shift();
+    }
+    this.history.push(this.state);
+    this.cur = Cursor.from(this.state, this._cursorUpdateCb.bind(this));
+    this.emit("change", pointer.compile(path), valAfter, valBefore);
   }
 
-  applyPatch(patch, strict = true) {
-    const failedPatches = [];
-    forEach(patch, entry => {
-      try {
-        patchEntry(this.state, this.modifier, strict, entry);
-      } catch (e) {
-        failedPatches.push(e);
-      }
-    });
-    this.modifier.compact();
-    this.modifier.forEachNewChange((path, newVal, oldVal) => {
-      this.emit("change", path, newVal, oldVal);
-    });
-    if (strict && failedPatches.length) {
-      const err = Error(failedPatches.length + " failed patch entries");
-      err.failedPatches = failedPatches;
-      throw err;
-    }
+  applyPatch(p, strict = true) {
+    patch(this.cur, filter(p, ({ op }) => strict || op !== "test"));
   }
 
-  getLatestPatch() {
-    const p = generateDiffFromChanges(this.modifier);
-    this.modifier.reset();
-    return p;
+  clear() {
+    this.cur.clear();
   }
 
   toJSON() {
-    return this.state;
+    return this.state.toJS();
   }
 
   static clone(other) {
-    return new State(cloneDeep(other.state));
+    return new State(other.state);
   }
 }
+
+// borrow methods from Immutable Cursor:
+forEach([
+  "getIn", "setIn", "deleteIn", "removeIn", "updateIn", "mergeIn", "mergeDeepIn"
+], methodName => {
+  State.prototype[methodName] = function (path, ...args) {
+    if (isString(path)) {
+      path = pointer.parse(path);
+    }
+    return this.cur[methodName].apply(this.cur, [path].concat(args));
+  };
+});
+
+// aliases
+forEach([
+  "get", "set", "delete", "remove", "update", "merge", "mergeDeep"
+], methodName => {
+  State.prototype[methodName] = State.prototype[methodName + "In"];
+});
 
 export default State;

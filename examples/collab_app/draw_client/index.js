@@ -3,6 +3,7 @@ import Sync from "../../../src/sync";
 import request from "superagent";
 import {
   init as d_init,
+  clearDrawings as d_clearDrawings,
   addDrawing as d_addDrawing,
   moveDrawing as d_moveDrawing,
   removeDrawing as d_removeDrawing,
@@ -12,6 +13,8 @@ import {
   toggleDraw as d_toggleDraw,
   toggleMove as d_toggleMove
 } from "./drawing";
+import pointer from "json-pointer";
+import { forEach } from "lodash";
 
 const SYNC_INTERVAL_MS = 500; // 0.5 sec
 
@@ -44,8 +47,14 @@ request.get("/connect").end((err, res) => {
     state.set(["shapes", id, "pos"], {top, left});
   });
   state.on("change", (path, val, old) => {
+    path = pointer.parse(path);
     if (path[0] === "shapes") {
-      if (path.length === 2) {
+      if (path.length === 1) {
+        d_clearDrawings();
+        forEach(val, (shape, id) => {
+          d_addDrawing(shape, id);
+        });
+      } else if (path.length === 2) {
         if (!old) {
           d_addDrawing(val, path[1]);
         } else if (!val) {

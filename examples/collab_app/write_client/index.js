@@ -7,6 +7,7 @@ import {
   setLineText as w_setLineText,
   onTextChange as w_onTextChange,
 } from "./write";
+import pointer from "json-pointer";
 
 const SYNC_INTERVAL_MS = 500; // 0.5 sec
 
@@ -30,8 +31,9 @@ request.get("/connect").end((err, res) => {
 
   sync.addPeer("server");
 
-  w_onTextChange(text => state.set(["lines"], text.split("\n")));
+  w_onTextChange(text => state.set("/lines", text.split("\n")));
   state.on("change", (path, val, old) => {
+    path = pointer.parse(path);
     if (path[0] === "lines") {
       if (path.length === 1) {
         w_setText(val.join("\n"));
