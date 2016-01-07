@@ -1,5 +1,7 @@
 import State from "../src/state";
 import Sync from "../src/sync";
+import { eq } from "lodash";
+import assert from "assert";
 
 var c1s = new State(),
     c1sync = new Sync(c1s);
@@ -31,5 +33,5 @@ c1p = c1sync.patchPeer("server");
 sa = ssync.receive("client1", c1p, false);
 c1sync.receive("server", sa, true);
 
-console.log(c1s.state);
-console.log(c2s.state);
+assert(eq(c1s.toJSON(), c2s.toJSON()));
+assert(eq(c1s.toJSON(), ss.toJSON()));
