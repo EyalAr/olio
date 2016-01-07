@@ -1,6 +1,7 @@
 import Ractive from "ractive";
 import {
   forEach,
+  map,
   uniqueId
 } from "lodash";
 
@@ -13,7 +14,7 @@ export function init(el, initLines, myid) {
     el: el,
     template: "<textarea value={{text}}></textarea>",
     data: {
-      text: initLines.join("\n")
+      text: map(initLines, line => line.join(" ")).join("\n")
     }
   });
   doc.observe("text", text => {
@@ -33,6 +34,14 @@ export function setLineText(line, lineText, report = true) {
   let text = doc.get("text").split("\n");
   text[line] = lineText;
   doc.set("text", text.join("\n"));
+  pauseObservers = false;
+}
+
+export function setWordText(line, word, wordText, report = true) {
+  pauseObservers = !report;
+  let text = map(doc.get("text").split("\n"), line => line.split(" "));
+  text[line][word] = wordText;
+  doc.set("text", map(text, line => line.join(" ")).join("\n"));
   pauseObservers = false;
 }
 

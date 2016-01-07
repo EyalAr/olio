@@ -8,9 +8,44 @@ Use as:
 0. A server which syncs with multiple clients.
 0. A client which syncs directly with other clients in a peer-to-peer network.
 
-Peers generate sync requests and sync responses. A sync request contains changes
-to state made by peer A which peer B should apply. The response from peer B
-contains changes since peer's A last sync.
+Transport layer and synchronization timing are up to you. Use HTTP, Websockets,
+WebRTC data channel, or whatever.
+
+Peers generate sync requests and sync responses (a sync cycle). A sync request
+contains changes to state made by peer A which peer B should apply. The response
+from peer B contains changes since peer's A last sync.
+
+```js
+// A state is any generic data structure.
+// State objects are synchronized between peers.
+var myState = new State();
+
+// Sync objects wrap a state and manage synchronization between an arbitrary
+// number of peers.
+var sync = new Sync(myState);
+
+// Add a peer to synchronize states with. Can be a server peer, or any other.
+// Add as many peers as you like.
+// In a centralized server architecture, all clients add the server as a peer;
+// and the server adds all clients as peers.
+sync.addPeer("server");
+
+// Modify the state:
+myState.set("/name/first", "Donald");
+myState.set("/name/last", "Duck");
+myState.set("/nephews", ["Huey", "Dewey", "Louie"]);
+
+// Start a synchronization cycle with a peer:
+var patch = sync.patchPeer("server");
+
+// Send the patch to your peer and wait for an answer...
+
+// When the answer arrives, receive it:
+sync.receive("server", answer);
+
+// Now my state and peer's state are identical.
+// Ready for a new sync cycle...
+```
 
 Based on [Differential Synchronization by Neil Fraser](https://neil.fraser.name/writing/sync/eng047-fraser.pdf).
 
@@ -21,6 +56,8 @@ Based on [Differential Synchronization by Neil Fraser](https://neil.fraser.name/
 [Collaborative text editing demo:](examples/collab_app/write_client)
 
 ![Text demo](demo_write.gif)
+
+![Text demo](demo_write_words.gif)
 
 ## API
 
@@ -41,8 +78,8 @@ require(['olio/state'], function(State){ /* ... */ });
 
 `s.set( keypath, value )`
 
-0. `keypath {String/Array}`
-0. `value {*}`
+0. `keypath {String}` - A [JSON pointer](http://jsonpatch.com/#json-pointer)
+0. `value {JSON/Array/Primitive}`
 
 ### Sync
 
