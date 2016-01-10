@@ -1,6 +1,7 @@
-import { forEach } from "lodash";
+import { forEach, filter } from "lodash";
 import State from "./state";
 import diff from "./utils/diff";
+import patch from "./utils/patch";
 
 class Sync {
   constructor(init) {
@@ -28,7 +29,7 @@ class Sync {
     // should we bother calculating a diff?
     if (!peer.isUpToDate) {
       const p = diff(peer.state, this.myState);
-      peer.state.applyPatch(p);
+      applyPatch(peer.state, p);
       peer.isUpToDate = true;
       return p;
     }
@@ -39,10 +40,10 @@ class Sync {
     const peer = this.peers[id];
     if (p.length) {
       try {
-        peer.state.applyPatch(p, !preferRemote);
+        applyPatch(peer.state, p, !preferRemote);
       } catch (e) { if (preferRemote) { throw e; } }
       try {
-        this.myState.applyPatch(p, !preferRemote);
+        applyPatch(this.myState, p, !preferRemote);
       } catch (e) {
         if (preferRemote) { throw e; }
       } finally {
@@ -63,12 +64,16 @@ class Sync {
     // but let's see if we should bother calculating a diff:
     if (!peer.isUpToDate) {
       const answer = diff(peer.state, this.myState);
-      peer.state.applyPatch(answer, true);
+      applyPatch(peer.state, answer, true);
       peer.isUpToDate = true;
       return answer;
     }
     return [];
   }
+}
+
+function applyPatch(state, p, strict = true) {
+  patch(state.cur, filter(p, ({ op }) => strict || op !== "test"));
 }
 
 export default Sync;
