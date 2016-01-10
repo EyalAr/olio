@@ -150,17 +150,23 @@ The event handler is called with three parameters:
 ```js
 var s = new State();
 s.on("change", (path, newVal, oldVal) => {
-    console.log(path, ":", oldVal, "-->", newVal);
+    console.log(path, oldVal, "-->", newVal);
 });
 
 s.set("/a", [1, 2, 3]);
-// /a : undefined --> [ 1, 2, 3 ]
+// /a undefined --> [ 1, 2, 3 ]
+
+s.update("/a", a => a.map(v => v * v));
+// /a [ 1, 2, 3 ] --> [ 1, 4, 9 ]
 
 s.set("/a/0", -1);
-// /a/0 : 1 --> -1
+// /a/0 1 --> -1
 
 s.set("/a", "foo");
-/a [ -1, 2, 3 ] --> foo
+// /a [ -1, 4, 9 ] --> foo
+
+s.clear();
+//  { a: 'foo' } --> {}
 ```
 
 #### Immutability behind the scenes
