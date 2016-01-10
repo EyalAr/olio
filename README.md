@@ -121,6 +121,8 @@ s.toJSON();
 
 ##### `s.get(keypath)`
 
+0. `keypath {String}` - A [JSON pointer](http://jsonpatch.com/#json-pointer)
+
 Get the value under the specified keypath.
 Returns a primitive JS value, a plain object or an array.
 
@@ -133,6 +135,33 @@ s.get("/a"); // [1, 2, 3]
 ##### `s.toJSON()`
 
 Get the state as a JSON.
+
+#### State events
+
+##### `"change"`
+
+A `"change"` event is fired every time the state is modified.
+The event handler is called with three parameters:
+
+0. `keypath {String}` - A [JSON pointer](http://jsonpatch.com/#json-pointer)
+0. `newVal {JSON/Array/Primitive}` - the new value
+0. `oldVal {JSON/Array/Primitive}` - the old value
+
+```js
+var s = new State();
+s.on("change", (path, newVal, oldVal) => {
+    console.log(path, ":", oldVal, "-->", newVal);
+});
+
+s.set("/a", [1, 2, 3]);
+// /a : undefined --> [ 1, 2, 3 ]
+
+s.set("/a/0", -1);
+// /a/0 : 1 --> -1
+
+s.set("/a", "foo");
+/a [ -1, 2, 3 ] --> foo
+```
 
 #### Immutability behind the scenes
 
