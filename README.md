@@ -64,22 +64,95 @@ Based on [Differential Synchronization by Neil Fraser](https://neil.fraser.name/
 ### State
 
 ```Javascript
-import State from 'olio';
-var State = require('olio').State;
-require(['olio/state'], function(State){ /* ... */ });
+import State from "olio/state";
+var State = require("olio/state");
+require(["olio/state"], function(State){ /* ... */ });
 ```
 
-`State` is a constructor which receives an optional JSON object of the initial state.
+`State` is a constructor which receives an optional JSON object of the initial
+state.
 
 `var s = new State()`  
 `var s = new State(init)`
 
-#### Modifying state
+#### State modifiers
 
-`s.set( keypath, value )`
+##### `s.set(keypath, value)`
 
 0. `keypath {String}` - A [JSON pointer](http://jsonpatch.com/#json-pointer)
 0. `value {JSON/Array/Primitive}`
+
+Set a primitive value in a path in the state.
+
+```js
+s.set("/name", {
+    first: "Donald",
+    last: "Duck"
+});
+
+// equivalent to:
+s.set("/name/first", "Donald");
+s.set("/name/last", "Duck");
+```
+
+##### `s.clear()`
+
+Clear the state by removing all keys.
+
+##### `s.remove(keypath)`
+
+0. `keypath {String}` - A [JSON pointer](http://jsonpatch.com/#json-pointer)
+
+Remove value in the specified keypath.
+
+##### `s.update(keypath, updater)`
+
+0. `keypath {String}` - A [JSON pointer](http://jsonpatch.com/#json-pointer)
+0. `updater {Function(oldVal)}`
+
+```js
+s.set("/a", [1, 2, 3]);
+s.update("/a", a => a.map(v => v * v));
+s.toJSON();
+// { a: [1, 4, 9] }
+```
+
+#### State accessors
+
+##### `s.get(keypath)`
+
+Get the value under the specified keypath.
+Returns a primitive JS value, a plain object or an array.
+
+```js
+s.set("/a", [1, 2, 3]);
+s.get("/a/0"); // 1
+s.get("/a"); // [1, 2, 3]
+```
+
+##### `s.toJSON()`
+
+Get the state as a JSON.
+
+#### Immutability behind the scenes
+
+Behind the scenes, state is manages with [immutable](https://facebook.github.io/immutable-js)
+objects. It makes it easier to track and report changes in state, as well as
+keeping history of states and the possibility to undo changes.
+
+This means that state must be accessed and modified through one of the provided
+accessors or modifiers.
+
+```js
+var a = [1, 2, 3],
+    s = new State();
+
+s.set("/a", a);
+
+// a may be changes without affecting the state
+a[0] = -1;
+assert(a.get("/a/0") === 1);
+```
 
 ### Sync
 
