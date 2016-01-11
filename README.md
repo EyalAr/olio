@@ -63,6 +63,13 @@ Based on [Differential Synchronization by Neil Fraser](https://neil.fraser.name/
 
 ### State
 
+A state is where your data is stored. It's comparable to a plain JS object
+bundled with an event emiiter. So you can be nottified of any changes made to
+the state.  
+You can store any primitive JS type in your state. Setting arrays and plain
+objects in the state will traverse them recursively and set the primitive values
+in the proper paths in the state.
+
 ```Javascript
 import State from "olio/state";
 var State = require("olio/state");
@@ -86,8 +93,8 @@ Set a primitive value in a path in the state.
 
 ```js
 s.set("/name", {
-    first: "Donald",
-    last: "Duck"
+  first: "Donald",
+  last: "Duck"
 });
 
 // equivalent to:
@@ -136,16 +143,32 @@ s.get("/a"); // [1, 2, 3]
 
 Get the state as a JSON.
 
+```js
+var init = { foo: "bar" },
+    s = new State(init);
+
+var o1 = s.toJSON();
+// { foo: "bar" }
+
+assert(init !== o1);
+
+s.set("/foo", "baz");
+var o2 = s.toJSON();
+// { foo: "baz" }
+
+assert(o1 !== o2);
+```
+
 #### State events
 
-##### `"change"`
+##### Observing changes in state with `"change"` event
 
-A `"change"` event is fired every time the state is modified.
+Any change in the state emits a `"change"` event.  
 The event handler is called with three parameters:
 
 0. `keypath {String}` - A [JSON pointer](http://jsonpatch.com/#json-pointer)
-0. `newVal {JSON/Array/Primitive}` - the new value
-0. `oldVal {JSON/Array/Primitive}` - the old value
+0. `newVal {JSON/Array/Primitive}` - The value in that path, after the change
+0. `oldVal {JSON/Array/Primitive}` - The value in that path, before the change
 
 ```js
 var s = new State();
